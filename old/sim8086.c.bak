@@ -9,8 +9,7 @@
 // byte amounts
 #define one_byte 1
 #define two_bytes 2
-#define sixteen_bytes 16
-#define fread_buffer_size 2000 //number of bytes allocated to the fread buffer
+#define sixteen_bytes 16 #define fread_buffer_size 2000 //number of bytes allocated to the fread buffer
 
 // yes no
 #define yes 1
@@ -38,12 +37,13 @@ int get_displacement(int firstbyte, int mod, int regmem_number);
 
 int main(int argc, char **argv)
 {
-    // test for cli arguments, exit if user has provided too many, or none
+    // test for cli arguments, exit if user has provided none
     if (argc < 2)
     {
       printf ("no file to decode has been provided\n");
       exit(EXIT_FAILURE);
     }
+    // test for cli arguments, exit if user has too many
     if (argc > 2)
     {
       printf ("too many arguments provided, please provide only one file to decode\n");
