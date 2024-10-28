@@ -35,7 +35,7 @@ char* get_effective_address(int regmem);
 int get_displacement(int firstbyte, int mod, int regmem_number);
 
 
-int main(int argc, char **argv)
+int main(int argc, char *argv[])
 {
     // test for cli arguments, exit if user has provided none
     if (argc < 2)
