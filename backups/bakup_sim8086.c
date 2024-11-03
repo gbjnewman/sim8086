@@ -43,6 +43,7 @@ int main(int argc, char *argv[])
 	while ((byte = fgetc(asm_file)) != EOF)
 	{
 
+		printf("byte1 is %B: ", byte);
 		// mov regmem to/from reg
 		if ((byte >> 2) == 0b100010)
 		{
@@ -518,6 +519,7 @@ int main(int argc, char *argv[])
 		{
 			// read in the secong byte for this instruction type
 			int byte2 = fgetc(asm_file);
+			printf("add regmem to regmem: byte2 is %B : \n", byte2);
 			// mod00 memory mode no displacement *except special case
 			if ((byte2 >> 6) == 0b00)
 			{
@@ -644,45 +646,29 @@ int main(int argc, char *argv[])
 				// get displacement byte
 				int byte4 = fgetc(asm_file);
 				// bitwise OR together displacement bytes to make displacement value
-				int16_t displacement_value = ((byte4 << 8) | byte3);
+				int displacement_value = ((byte4 << 8) | byte3);
 				// w bit 1, wide mode
 				if ((byte & 0b1) == 0b1)
 				{
-					// get data byte
-					int byte5 = fgetc(asm_file);
-					// get data byte
-					int byte6 = fgetc(asm_file);
-					// bitwise OR together data bytes to make immediate value
-					int16_t immediate_value = ((byte6 << 8) | byte5);
 					printf
 						(
-						"add %s + %i, %s %i\n",
+						"add [%s], %i", 
 						// retrieve effective address
 						get_effective_address(byte2 & 0b111),
 						// print displacement value
-						displacement_value,
-						// print immediate value bit width
-						"word",
-						// print out the immediate value
-						immediate_value
+						displacement_value
 						);
 				}
 				// w bit 0
 				else
 				{
-					// get data byte
-					int byte5 = fgetc(asm_file);
 					printf
 						(
-						"add %s + %i, %s %i\n",
+						"fix this: add %s, %i",
 						// retrieve effective address
 						get_effective_address(byte2 & 0b111),
 						// print displacement value
-						displacement_value,
-						// print immediate value bit width
-						"byte",
-						// print out the immediate value
-						byte5
+						displacement_value
 						);
 				}
 			}
@@ -721,9 +707,9 @@ int main(int argc, char *argv[])
 		{
 			// get second instruction byte
 			int byte2 = fgetc(asm_file);
-			if ((byte2 >> 3) != 0b000)
+			printf("add imm to regmem: byte2 is %B : \n", byte2);
+			if (((byte2 >> 3) & 0b111) != 0b000)
 			{
-				printf("goto end add\n");
 				goto end_add;
 			}
 			// mod00, memory mode no displacement *except special case
@@ -802,6 +788,7 @@ int main(int argc, char *argv[])
 			// mod01, memory mode 8bit displacement follows// TODO: finish making this
 			if ((byte2 >> 6) == 0b01)// TODO: finish making this
 			{
+				printf("the fuck is this");
 				// get displacement byte
 				int byte3 = fgetc(asm_file);
 				printf("    mod01");
@@ -879,7 +866,7 @@ int main(int argc, char *argv[])
 						int8_t byte3 = fgetc(asm_file);
 						printf
 							(
-							"add %s, %i\n",
+							"here add %s, %i\n",
 							// get register
 							get_reg((byte & 0b1) << 3 | (byte2 & 0b111)),
 							// immediate value
@@ -893,16 +880,14 @@ int main(int argc, char *argv[])
 					int byte3 = fgetc(asm_file);
 					// get data byte
 					int byte4 = fgetc(asm_file);
-					// bitwise OR together data bytes to get immediate value
-					uint16_t immediate_value = ((byte4 << 8) | byte3);
-					// print out instruction
 					printf
 						(
 						"debug add %s, %i\n",
 						// get register
 						get_reg((byte & 0b1) << 3 | (byte2 & 0b111)),
 						// immediate value
-						immediate_value
+						// bitwise OR together data bytes to get immediate value
+						((byte4<<8) | byte3)
 						);
 					}
 				}
@@ -956,12 +941,13 @@ int main(int argc, char *argv[])
 		}
 
 end_add:
-
+goto skip_sub_cmp;
 		// sub regmem with reg to either FIXME:
 		if ((byte >> 2) == 0b001010)
 		{
 			// read in the secong byte for this instruction type
 			int byte2 = fgetc(asm_file);
+			printf("mod is %x : ", byte2 >> 6);
 			// mod00 memory mode no displacement *except special case
 			if ((byte2 >> 6) == 0b00)
 			{
@@ -1024,7 +1010,7 @@ end_add:
 				}
 			}
 			// mod01. memory mode displacement is 1byte.
-			if ((byte2 >> 6) == 0b01)
+			if (((byte2 >> 6) & 0b11) == 0b01)
 			{
 				// read in 3rd byte for displacement
 				int byte3 = fgetc(asm_file);
@@ -1165,11 +1151,11 @@ end_add:
 		{
 			// get second instruction byte
 			int byte2 = fgetc(asm_file);
-			if ((byte2 >> 3) != 0b101)
+			if (((byte2 >> 3) & 0b111) != 0b101)
 			{
-				printf("goto end sub\n");
 				goto end_sub;
 			}
+			printf("now am i here");
 			// mod00, memory mode no displacement *except special case
 			if ((byte2 >> 6) == 0b00)
 			{
@@ -1319,8 +1305,10 @@ end_add:
 					// if s is one, sign extend byte3
 					if (byte>>1)
 					{
+						printf("debug here");
 						// get data byte
 						int8_t byte3 = fgetc(asm_file);
+						int byte4 = fgetc(asm_file);
 						printf
 							(
 							"sub %s, %i\n",
@@ -1609,9 +1597,8 @@ end_sub:
 		{
 			// get second instruction byte
 			int byte2 = fgetc(asm_file);
-			if ((byte2 >> 3) != 0b111)
+			if (((byte2 >> 3) & 0b111) != 0b111)
 			{
-				printf("goto end cmp\n");
 				goto end_cmp;
 			}
 			// mod00, memory mode no displacement *except special case
@@ -1844,7 +1831,8 @@ end_sub:
 		}
 
 end_cmp:
-
+skip_sub_cmp:
+		//printf("loop end\n");
 	}
 
 	// close the file when done(to release the resources it was using)
