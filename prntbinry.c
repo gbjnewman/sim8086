@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
 	int byte;
 	while ((byte = fgetc(asm_file)) != EOF)
 	{
-		printf("%i \n", byte);
+		printf("%-.3i: %0.8b \n", byte, byte);
 	}
 
 	return 0;
