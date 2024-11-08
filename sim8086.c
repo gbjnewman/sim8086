@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
 		if (byte == 0b01110101)
 		{
 			int byte2 = fgetc(asm_file);
-			printf("jnz something\n");
+			printf("jnz -\n");
 		}
 
 	}
