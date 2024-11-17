@@ -1,50 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h> // so i can use exit(EXIT_FAILURE)
 #include <stdint.h> // so i can use int8_t
-#include <string.h> // so i can use strcmp
 
 // function prototypes
-char* get_reg_string(int reg);
+char* get_reg(int reg);
 char* get_effective_address(int regmem);
 void regmem_tofrom_regmem(FILE* asm_file, int byte, char* instruction);
 void immediate_to_regmem(FILE* asm_file, int byte, char* instruction);
 void immediate_to_register(FILE* asm_file, int byte, char* instruction);
 void immediate_to_accumulator(FILE* asm_file, int byte, char* instruction);
-void print_registers();
-void write_to_reg(char* reg, uint16_t value);
-uint16_t get_reg_value(char* reg);
-
-// GLOBALS
-// execute flag
-int execute_flag = 0;
-// make registers for the simulator
-uint16_t regs[8] = {0};
-// register names
-const char *reg_names[8] = {"ax", "bx", "cx", "dx", "sp", "bp", "si", "di"};
-// set variables for the individual registers
-uint16_t *ax = &regs[0];
-uint16_t *bx = &regs[1];
-uint16_t *cx = &regs[2];
-uint16_t *dx = &regs[3];
-uint16_t *sp = &regs[4];
-uint16_t *bp = &regs[5];
-uint16_t *si = &regs[6];
-uint16_t *di = &regs[7];
-
 
 /* START MAIN FUNCTION */
 int main(int argc, char *argv[])
 {
-
-	// process commandline flags
-	for (int i = 0; i < argc; i++)
-	{
-		if (strcmp(argv[i], "--execute") ==0 || strcmp(argv[i], "-e") == 0)
-		{
-			execute_flag = 1;
-			printf("execute flag is set\n");
-		};
-	}
 
 	// check if no arguments to main program are given
 	if (argc < 2)
@@ -53,14 +21,12 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	/* // not in use because flags have been implemented
 	// check if too many arguments to main program are given
 	if (argc > 2)
 	{
-		printf("Too many arguments given.\n");
+		printf("Too many arguments given. Please provide one ASM file to decode\n");
 		exit(EXIT_FAILURE);
 	}
-	*/
 
 	// open file in read only binary mode
 	FILE *asm_file = fopen(argv[1], "rb");
@@ -75,7 +41,22 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	// start processing the asm instruction stream
+	// set up registers
+	struct register
+	{
+		union
+		{
+			struct
+			{
+				uint8_t low;
+				uint8_t high;
+			};
+			uint16_t wide;
+		};
+	};
+
+	/* read the asm binary file bytes. fgetc gets one byte at a time. call it each time another
+	byte is needed. */
 	int byte;
 	while ((byte = fgetc(asm_file)) != EOF)
 	{
@@ -83,19 +64,22 @@ int main(int argc, char *argv[])
 		// mov regmem to/from reg
 		if ((byte >> 2) == 0b100010)
 		{
-			regmem_tofrom_regmem(asm_file, byte, "mov");
+			char instruction[] = "mov";
+			regmem_tofrom_regmem(asm_file, byte, instruction);
 		}
 
-		// mov immediate to regmem
+		// mov immediate to regmem // TODO: not complete yet
 		if ((byte >> 1) == 0b1100011)
 		{
-			immediate_to_regmem(asm_file, byte, "mov");
+			char instruction[] = "mov";
+			immediate_to_regmem(asm_file, byte, instruction);
 		}
 
 		// mov immediate to register
 		if ((byte >> 4) == 0b1011)
 		{
-			immediate_to_register(asm_file, byte, "mov");
+			char instruction[] = "mov";
+			immediate_to_register(asm_file, byte, instruction);
 		}
 
 		// mov memory to accumulator
@@ -208,16 +192,9 @@ int main(int argc, char *argv[])
 		if (byte == 0b01110101)
 		{
 			int byte2 = fgetc(asm_file);
-			printf("jnz - %i\n", byte2);
+			printf("jnz -\n");
 		}
 
-
-	}
-	if (execute_flag)
-	{
-		//print out registers before exiting
-		printf("Final registers:\n");
-		print_registers();
 	}
 
 	// close the file when done(to release the resources it was using)
@@ -231,144 +208,256 @@ int main(int argc, char *argv[])
 
 void regmem_tofrom_regmem(FILE* asm_file, int byte, char* instruction)
 {
-
-	// read in the secong byte for this instruction set
+	// read in the secong byte for this instruction
 	int byte2 = fgetc(asm_file);
-
-	// get destination bit
-	int dbit = ((byte >> 1) & 0b1);
-
-	// get register
-	char* reg = get_reg_string(((byte&0b1)<<3) | ((byte2 >> 3) & 0b111));
-
-	// get register/memory
-	char* regmem = get_reg_string(((byte&0b1)<<3) | (byte2 & 0b111));
-
-	// get effective address
-	char* effaddr =
-		get_effective_address(byte2 & 0b111);
-
-	// print out the instruction mnemonic
-	printf("%s ", instruction);
-
-	// mod00. no displacement, except special case
+	// mod field check. mod 00. no displacement except special case
 	if ((byte2 >> 6) == 0b00)
 	{
-		// special case of mod00(reg110 direct address). two byte displacement.
+		/*
+		 * the special case. for this instruction where regmem is 110 has a 2 byte
+		 * displacement.
+		 */
 		if ((byte2 & 0b111) == 0b110)
 		{
+			printf("special case: ");
 			// read in 3rd and 4th byte for displacement
 			int byte3 = fgetc(asm_file);
 			int byte4 = fgetc(asm_file);
-
-			// bitwise OR together byte4 and byte3 for displacemt value
-			int16_t disp_val = ((byte4 << 8) | byte3);
-
-			dbit ? // if d bit is one, reg is destination
-				printf("%s, [%i]", reg, disp_val)
-				: // if d bit is zero, reg is source
-				printf("[%i], %s", disp_val, reg);
+			// if d bit is one, reg is destination
+			if (((byte >> 1) & 0b1) == 0b1)
+			{
+				printf
+					(
+					"%s %s, [%i]\n",
+					instruction,
+					// register. add wide bit onto reg to retrieve the correct register
+					get_reg(((byte&0b1)<<3) | ((byte2 >> 3) & 0b111)),
+					// bitwise OR byte 4 onto front of byte3 so the number is correct
+					((byte4 << 8) | byte3)
+					);
+			}
+			// if d bit is zero, regmem is destination
+			else
+			{
+				printf
+					(
+					"%s [%i], %s\n",
+					instruction,
+					((byte4 << 8) | byte3),
+					get_reg(((byte&0b1)<<3) | ((byte2 >> 3) & 0b111))
+					);
+			}
 		}
-
-		// normal case of mod00(reg is not 110). no dispacement.
+		// the not spicial case section, there is no dispacement needed
 		else
 		{
-			dbit ? // if d bit is one, reg is destination
-				printf("%s, [%s]", reg, effaddr)
-				: // if d bit is zero, reg is source
-				printf("[%s], %s", effaddr, reg);
+			// if D bit is one, reg is the destination
+			if (((byte >> 1) & 0b1) == 0b1)
+			{
+				printf
+					(
+					"%s %s, [%s]\n",
+					instruction,
+					get_reg(((byte&0b1)<<3) | ((byte2 >> 3) & 0b111)),
+					get_effective_address(byte2 & 0b111)
+					);
+			}
+			// if D bit is zero, regmem is the destination
+			else
+			{
+				printf
+					(
+					"%s [%s], %s\n",
+					instruction,
+					get_effective_address(byte2 & 0b111),
+					get_reg(((byte&0b1)<<3) | ((byte2 >> 3) & 0b111))
+					);
+			}
 		}
-
-	} // mod01. displacement one byte.
+	} // mod 01. memory mode displacement is 1 byte.
 	if ((byte2 >> 6) == 0b01)
 	{
 		// read in 3rd byte for displacement
-		int8_t byte3 = fgetc(asm_file);
-
+		int byte3 = fgetc(asm_file);
 		// check if D bit is 1
-		dbit ? // if D is 1 reg is destination
-			(byte3 != 0) ? // if byte3 is not zero add it into printf
-						printf("%s, [%s %s %i]", reg, effaddr,
-						// string for the sign
-						byte3 < 0 ? "-" : "+",
-						// displacement value(with remove sign hack)
-						byte3 < 0 ? -byte3 : byte3)
-						: // if byte3 is zero then don't add it into printf
-						printf("%s, [%s]", reg, effaddr)
-		: // if D is 0 reg is source
-			(byte3 != 0) ? // if byte3 is not zero add it into printf
-						printf("[%s %s %i], %s",
-						// effective address
-						effaddr,
-						// string for the sign
-						byte3 < 0 ? "-" : "+",
-						// displacement value
-						byte3 < 0 ? -byte3 : byte3,
-						// register
-						reg
-						)
-						: // if byte3 is zero then don't add it into printf
-						printf("[%s], %s", effaddr, reg);
+		if (((byte >> 1) & 0b1) == 0b1)
+		{
+		// if D is 1 reg is destination
+			// if byte3 is not zero add it into printf
+			if (byte3 != 0)
+			{
+				printf
+					(
+					"%s %s, [%s %s %i]\n",
+					instruction,
+					// register
+					get_reg(((byte&0b1)<<3) | ((byte2 >> 3) & 0b111)),
+					// effective address
+					get_effective_address(byte2 & 0b111),
+					// string for the sign
+					byte3 < 0 ? "-" : "+",
+					// displacement value
+					byte3 < 0 ? -byte3 : byte3
+					);
+			}
+			// if byte3 is zero then don't add it into printf
+			else
+			{
+				printf
+					(
+					"%s %s, [%s]\n",
+					instruction,
+					get_reg(((byte&0b1)<<3) | ((byte2 >> 3) & 0b111)),
+					get_effective_address(byte2 & 0b111)
+					);
+			}
+		}
+		else
+		{
+		// if D is 0 regmen is destination
+			// if byte3 is not zero add it into printf
+			if (byte3 != 0)
+			{
+				printf
+					(
+					"%s [%s %s %i], %s\n",
+					instruction,
+					// effective address
+					get_effective_address(byte2 & 0b111),
+					// string for the sign
+					byte3 < 0 ? "-" : "+",
+					// displacement value
+					byte3 < 0 ? -byte3 : byte3,
+					// register
+					get_reg(((byte&0b1)<<3) | ((byte2 >> 3) & 0b111))
+					);
+			}
+			// if byte3 is zero then don't add it into printf
+			else
+			{
+				printf
+					(
+					"%s [%s], %s\n",
+					instruction,
+					get_effective_address(byte2 & 0b111),
+					get_reg(((byte&0b1)<<3) | ((byte2 >> 3) & 0b111))
+					);
+			}
+		}
 	}
-
-	// mod10. memory mode displacement is 2 byte.
+	// mod 10. memory mode displacement is 2 byte.
 	if ((byte2 >> 6) == 0b10)
 	{
-
 		// read in 3rd byte for displacement
 		int byte3 = fgetc(asm_file);
-
 		// read in 4th byte for displacement
 		int byte4 = fgetc(asm_file);
-
 		// displacemt value
-		int16_t disp_val = ((byte4 << 8) | byte3);
-
-		dbit ? // if D is 1 reg is destination
-			// if byte3 and byte4 are not 0, add there value into printf
-			((byte3 != 0) && (byte4 !=0))
-				? printf("%s, [%s + %i]", reg, effaddr, disp_val)
-				// if byte3 and byte4 are 0, don't add their value into printf
-				: printf("%s, [%s]", reg, effaddr)
-
-			: // if D is 0 reg is source
-			// if byte3 and byte4 are not 0, add there value into printf
-			(byte3 != 0) && (byte4 !=0)
-				? printf("[%s %s %i], %s", effaddr,
-					// print displacemt sign string
-					disp_val < 0 ? "-" : "+",
-					// displacement value(displacement sign hack)
-					disp_val < 0 ? -disp_val : disp_val,
+		int16_t displacement_value = ((byte4 << 8) | byte3);
+		// if D is 1 reg is destination
+		if (((byte >> 1) & 0b1) == 0b1)
+		{
+			// if byte3 and byte4 are not zero, add there value into printf
+			if ((byte3 != 0) && (byte4 !=0))
+			{
+				printf
+					(
+					"%s %s, [%s + %i]\n",
+					instruction,
+					// get register
+					get_reg(((byte&0b1)<<3) | ((byte2 >> 3) & 0b111)),
+					// get effective address
+					get_effective_address(byte2 & 0b111),
+					// displacent for effective address
+					displacement_value
+					);
+			}
+			// if byte3 and byte4 are zero, don't add their value into printf
+			else
+			{
+				// if byte 3 is 0 then don't add it into printf
+				printf
+					(
+					"%s %s, [%s]\n",
+					instruction,
+					get_reg(((byte&0b1)<<3) | ((byte2 >> 3) & 0b111)),
+					get_effective_address(byte2 & 0b111)
+					);
+			}
+		}
+		// if D is 0 regmen is destination
+		else
+		{
+			// if byte3 and byte4 are not zero, add there value into printf
+			if ((byte3 != 0) && (byte4 !=0))
+			{
+				printf
+					(
+					"%s [%s %s %i], %s\n",
+					instruction,
+					// effective address
+					get_effective_address(byte2 & 0b111),
+					// displacemt sign
+					displacement_value < 0 ? "-" : "+",
+					// displacement value
+					displacement_value < 0 ? -displacement_value : displacement_value,
 					// register
-					reg)
-				// if byte3 and byte4 are 0, don't add their value into printf
-				:
-					// if byte3 is 0 then don't add it into printf
-					printf("[%s], %s\n", effaddr, reg);
+					get_reg(((byte&0b1)<<3) | ((byte2 >> 3) & 0b111))
+					);
+			}
+			// if byte3 and byte4 are zero, don't add their value into printf
+			else
+			{
+				// if byte 3 is 0 then don't add it into printf
+				printf
+					(
+					"%s [%s], %s\n",
+					instruction,
+					get_effective_address(byte2 & 0b111),
+					get_reg(((byte&0b1)<<3) | ((byte2 >> 3) & 0b111))
+					);
+			}
+		}
 	}
-
-	// mod11 register mode, no displacement
+	// mod field check. mod 11 register mode, no displacement
 	if ((byte2 >> 6) == 0b11)
 	{
-			dbit ? // D bit is one, reg is destination
-				printf("%s, %s", reg, regmem)
-				:// D bit is zero, regmem is destination
-				printf("%s, %s", regmem, reg);
+			// D bit is one, reg is the destination
+			if (((byte >> 1) & 0b1) == 0b1)
+			{
+				printf
+					(
+					"%s %s, %s\n",
+					instruction,
+					// add wide bit to reg to get the correct register
+					get_reg(((byte&0b1)<<3) | ((byte2 >> 3) & 0b111)),
+					// add wide bit to regmem to get the correct register
+					get_reg(((byte&0b1)<<3) | (byte2 & 0b111))
+					);
+			}
+			// D bit is zero, regmem is the destination
+			else
+			{
+				printf
+					(
+					"%s %s, %s\n",
+					instruction,
+					// add wide bit to regmem to get the correct register
+					get_reg(((byte&0b1)<<3) | (byte2 & 0b111)),
+					// add wide bit to reg to get the correct register
+					get_reg(((byte&0b1)<<3) | ((byte2 >> 3) & 0b111))
+					);
+			}
 	}
-
-	// make a newline at the end of the instruction
-	printf("\n");
 }
 
 void immediate_to_regmem(FILE* asm_file, int byte, char* instruction)
 {
 	// get instruction byte
 	int byte2 = fgetc(asm_file);
-	int sbit = 0;
 
 	if ((byte >> 2) == 0b100000)
 	{
-		sbit = (byte >> 1) &0b1;
 		if (((byte2 >> 3) & 0b111) == 0b000)
 		{
 			instruction = "add";
@@ -386,10 +475,10 @@ void immediate_to_regmem(FILE* asm_file, int byte, char* instruction)
 	if ((byte2 >> 6) == 0b00)
 	// mod00, no displacement *except special case
 	{
-		// immediate to direct address. speical case 110 is 16bit displacement
+		// immediate to direct address. special case regmem equals 110. 16bit displacement
 		if ((byte2 & 0b111) == 0b110)
 		{
-			//printf("*immediate to direct address, mod00 special case. \n");
+			//printf("    *immediate to direct address, mod00 specail case. \n");
 			// get displacement byte
 			int byte3 = fgetc(asm_file);
 			// get displacement byte
@@ -414,10 +503,9 @@ void immediate_to_regmem(FILE* asm_file, int byte, char* instruction)
 			{
 				// get data byte
 				int byte5 = fgetc(asm_file);
-				printf("fix this imm to direct, byte 5 is %i\n", byte5);
+				printf("fix this imm to direct\n");
 			}
 		}
-
 		// not special case, no displacement
 		else
 		{
@@ -429,12 +517,12 @@ void immediate_to_regmem(FILE* asm_file, int byte, char* instruction)
 				//print out instruction
 				printf
 					(
-					"%s [%s], %s %i\n",
+					"%s %s [%s], %i\n",
 					instruction,
-					// retrieve effective address
-					get_effective_address(byte2 & 0b111),
 					// immediate size
 					"word",
+					// retrieve effective address
+					get_effective_address(byte2 & 0b111),
 					// immediate value
 					byte3
 					);
@@ -447,59 +535,50 @@ void immediate_to_regmem(FILE* asm_file, int byte, char* instruction)
 				//print out instruction
 				printf
 					(
-					"%s [%s], %s %i\n",
+					"%s %s [%s], %i\n",
 					instruction,
-					// retrieve effective address
-					get_effective_address(byte2 & 0b111),
 					// immediate size
 					"byte",
+					// retrieve effective address
+					get_effective_address(byte2 & 0b111),
 					// immediate value
 					byte3
 					);
 			}
 		}
 	}
-
-	// mod01, memory mode, 8bit displacement follows// TODO: finish this
+	// mod01, memory mode, 8bit displacement follows// TODO: finish making this
 	if ((byte2 >> 6) == 0b01)// TODO: finish making this
 	{
 		// get displacement byte
 		int byte3 = fgetc(asm_file);
-		printf("    mod01, byte 3 is %i", byte3);
+		printf("    mod01");
 	}
-
 	// mod10, memory mode, 16bit displacement follows
 	if ((byte2 >> 6) == 0b10)
 	{
-
 		// get displacement byte
 		int byte3 = fgetc(asm_file);
-
 		// get displacement byte
 		int byte4 = fgetc(asm_file);
-
 		// bitwise OR together displacement bytes to make displacement value
 		int16_t displacement_value = ((byte4 << 8) | byte3);
-
-
 		// w bit 1, wide mode
 		if ((byte & 0b1) == 0b1)
 		{
-
 			// get data byte
 			int8_t byte5 = fgetc(asm_file);
-
 			// print out instruction
 			printf
 				(
-				"%s [%s + %i], %s %i\n",
+				"%s %s [%s + %i], %i\n",
 				instruction,
+				// print immediate value bit width
+				"word",
 				// retrieve effective address
 				get_effective_address(byte2 & 0b111),
 				// print displacement value
 				displacement_value,
-				// print immediate value bit width
-				"word",
 				// print out the immediate value
 				byte5
 				);
@@ -508,7 +587,7 @@ void immediate_to_regmem(FILE* asm_file, int byte, char* instruction)
 		else
 		{
 			// get data byte
-			int8_t byte5 = fgetc(asm_file);
+			int byte5 = fgetc(asm_file);
 			printf
 				(
 				"%s %s + %i, %s %i\n",
@@ -524,7 +603,6 @@ void immediate_to_regmem(FILE* asm_file, int byte, char* instruction)
 				);
 		}
 	}
-
 	// mod11, register mode, no displacement
 	if ((byte2 >> 6) == 0b11)
 	{
@@ -541,7 +619,7 @@ void immediate_to_regmem(FILE* asm_file, int byte, char* instruction)
 					"%s %s, %i\n",
 					instruction,
 					// get register
-					get_reg_string((byte & 0b1) << 3 | (byte2 & 0b111)),
+					get_reg((byte & 0b1) << 3 | (byte2 & 0b111)),
 					// immediate value
 					byte3
 					);
@@ -558,7 +636,7 @@ void immediate_to_regmem(FILE* asm_file, int byte, char* instruction)
 				"debug %s %s, %i\n",
 				instruction,
 				// get register
-				get_reg_string((byte & 0b1) << 3 | (byte2 & 0b111)),
+				get_reg((byte & 0b1) << 3 | (byte2 & 0b111)),
 				// immediate value
 				// bitwise OR together data bytes to get immediate value
 				((byte4<<8) | byte3)
@@ -576,7 +654,7 @@ void immediate_to_regmem(FILE* asm_file, int byte, char* instruction)
 				"%s %s, %i\n : this immediate value needs checking",
 				instruction,
 				// get register
-				get_reg_string((byte & 0b1) << 3 | (byte2 & 0b111)),
+				get_reg((byte & 0b1) << 3 | (byte2 & 0b111)),
 				// immediate value
 				byte3
 				);
@@ -603,60 +681,28 @@ void immediate_to_regmem(FILE* asm_file, int byte, char* instruction)
 
 void immediate_to_register(FILE* asm_file, int byte, char* instruction)
 {
-	int16_t value = 0;
-	char* reg_string = get_reg_string(((byte >> 3) & 0b1) << 3 | (byte & 0b111));
-
+	// initialise byte2 and byte3 to zero here so printf can use them as is if needed
+	int byte2 = 0;
+	int byte3 = 0;
 	// check W(wide) bit
-	// if W is one
 	if ((byte >> 3) & 0b1)
 	{
 		// if the wide bit is one, then a 16bit (2byte) displacement is needed
-		int16_t byte2 = fgetc(asm_file);
-		int16_t byte3 = fgetc(asm_file);
-		value = ((byte3 << 8) | byte2);
-	// if wide is zero
+		byte2 = fgetc(asm_file);
+		byte3 = fgetc(asm_file);
 	} else {
-		// if the wide bit is zero, then only an 8bit displacement is needed
-		int8_t byte2 = fgetc(asm_file);
-		value = byte2;
+		// if the wide bit is zero, then only an 8bit (1byte) displacement is needed
+		byte2 = fgetc(asm_file);
 	}
-
-	// execute if flag is set
-	if (execute_flag == 1)
-	{
-		//get original value to add to printf
-		int orig_reg_value = get_reg_value(reg_string);
-		// write the new value to the register
-		write_to_reg(reg_string, value);
-		// get new value to add to printf
-		int new_reg_value = get_reg_value(reg_string);
-		// print out asm instruction
-		printf(
-			"%s %s, %i ; %s:0x%i->0x%i\n",
-			instruction,
-			// retrieve the correct register name
-			reg_string,
-			// value from the displacement byte/s
-			value,
-			reg_string,
-			orig_reg_value,
-			new_reg_value
-			);
-	}
-	else
-	{
 	// print out asm instruction
 	printf(
 		"%s %s, %i\n",
 		instruction,
 		// retrieve the correct register name
-		//get_reg_string(((byte >> 3) & 0b1) << 3 | (byte & 0b111)),
-		reg_string,
+		get_reg(((byte >> 3) & 0b1) << 3 | (byte & 0b111)),
 		// calculate the value from the displacement byte/s
-		//((byte3 << 8) | byte2)
-		value
+		((byte3 << 8) | byte2)
 		);
-	}
 }
 
 void immediate_to_accumulator(FILE* asm_file, int byte, char* instruction)
@@ -677,7 +723,7 @@ void immediate_to_accumulator(FILE* asm_file, int byte, char* instruction)
 			((byte3 << 8) | byte2)
 			);
 	} else {
-		// if the wide bit is zero, then only an 8bit displacement is needed
+		// if the wide bit is zero, then only an 8bit (1byte) displacement is needed
 		int8_t byte2 = fgetc(asm_file);
 		// print out asm instruction
 		printf(
@@ -692,7 +738,7 @@ void immediate_to_accumulator(FILE* asm_file, int byte, char* instruction)
 }
 
 // register array retrieval
-char* get_reg_string(int reg)
+char* get_reg(int reg)
 {
 	char *register_name[] =
 	{
@@ -732,87 +778,3 @@ char* get_effective_address(int regmem)
 	};
 	return effective_address_calculation[regmem];
 }
-
-void print_registers()
-{
-	for (size_t i = 0; i < (sizeof(regs) / sizeof(regs[0])); i++)
-	{
-		printf("      %s: 0x%04x\n", "regname", regs[i]);
-	}
-}
-
-void write_to_reg(char* reg, uint16_t value)
-{
-	if (strcmp(reg, "ax") == 0)
-	{
-		*ax = value;
-	}
-	if (strcmp(reg, "bx") == 0)
-	{
-		*bx = value;
-	}
-	if (strcmp(reg, "cx") == 0)
-	{
-		*cx = value;
-	}
-	if (strcmp(reg, "dx") == 0)
-	{
-		*dx = value;
-	}
-	if (strcmp(reg, "sp") == 0)
-	{
-		*sp = value;
-	}
-	if (strcmp(reg, "bp") == 0)
-	{
-		*bp = value;
-	}
-	if (strcmp(reg, "si") == 0)
-	{
-		*si = value;
-	}
-	if (strcmp(reg, "di") == 0)
-	{
-		*di = value;
-	}
-}
-
-uint16_t get_reg_value(char* reg)
-{
-	if (strcmp(reg, "ax") == 0)
-	{
-		return *ax;
-	}
-	if (strcmp(reg, "bx") == 0)
-	{
-		return *bx;
-	}
-	if (strcmp(reg, "cx") == 0)
-	{
-		return *cx;
-	}
-	if (strcmp(reg, "dx") == 0)
-	{
-		return *dx;
-	}
-	if (strcmp(reg, "sp") == 0)
-	{
-		return *sp;
-	}
-	if (strcmp(reg, "bp") == 0)
-	{
-		return *bp;
-	}
-	if (strcmp(reg, "si") == 0)
-	{
-		return *si;
-	}
-	if (strcmp(reg, "di") == 0)
-	{
-		return *di;
-	}
-	return 0;
-}
-
-
-
