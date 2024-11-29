@@ -8,7 +8,7 @@ char* get_reg_string(int reg);
 char* get_effective_address(int regmem);
 void regmem_tofrom_regmem(FILE* asm_file, int byte, char* instruction);
 void immediate_to_regmem(FILE* asm_file, int byte, char* instruction);
-void immediate_with_RegOrAcc(FILE* asm_file, int byte, char* instruction);
+void immediate_to_register(FILE* asm_file, int byte, char* instruction);
 void immediate_to_accumulator(FILE* asm_file, int byte, char* instruction);
 void memory_with_accumulator(FILE* asm_file, int byte, char* instruction);
 void mod00(FILE* asm_file, int byte, int byte2, char* instruction, int sbit);
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 	// check if no arguments to the program are given
 	if (argc < 2)
 	{
-		printf("No file given, please provide an ASM file to decode\n");
+		printf("No file given, please provide one ASM file to decode\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -98,6 +98,7 @@ int main(int argc, char *argv[])
 		// copy flags array into new array for end comparison
 		const char *flags_orig[2];
 		memcpy(flags_orig, flags, sizeof(flags));
+		//print_registers(regs_orig, (sizeof(regs_orig) / sizeof(regs_orig[0])));
 
 		switch (byte)
 		{
@@ -107,10 +108,7 @@ int main(int argc, char *argv[])
 			case 0b00000001: // fall through
 			case 0b00000010: // fall through
 			case 0b00000011:
-				regmem_tofrom_regmem(
-						asm_file,
-						byte,
-						"add");
+				regmem_tofrom_regmem(asm_file, byte, "add");
 				break;
 
 			// add immediate to accumulator
@@ -159,11 +157,7 @@ int main(int argc, char *argv[])
 			case 0b00101001: // fall through
 			case 0b00101010: // fall through
 			case 0b00101011:
-				// call appropriate function
-				regmem_tofrom_regmem(
-						asm_file,
-						byte,
-						"sub");
+				regmem_tofrom_regmem(asm_file, byte, "sub");
 				break;
 
 			// sub immediate to accumulator
@@ -188,10 +182,7 @@ int main(int argc, char *argv[])
 			case 0b00111001: // fall through
 			case 0b00111010: // fall through
 			case 0b00111011:
-				regmem_tofrom_regmem(
-						asm_file,
-						byte,
-						"cmp");
+				regmem_tofrom_regmem(asm_file, byte, "cmp");
 				break;
 
 			// cmp immediate to accumulator
@@ -289,10 +280,7 @@ int main(int argc, char *argv[])
 			case 0b10001001: //fall through
 			case 0b10001010: //fall through
 			case 0b10001011:
-				regmem_tofrom_regmem(
-						asm_file,
-						byte,
-						"mov");
+				regmem_tofrom_regmem(asm_file, byte, "mov");
 				break;
 
 			case 0b10001100: printf("not implemented\n"); break;
@@ -355,7 +343,7 @@ int main(int argc, char *argv[])
 			case 0b10111101: // fall through
 			case 0b10111110: // fall through
 			case 0b10111111:
-				immediate_with_RegOrAcc(asm_file, byte, "mov");
+				immediate_to_register(asm_file, byte, "mov");
 				break;
 
 			case 0b11000000: printf("not implemented\n"); break;
@@ -429,7 +417,7 @@ int main(int argc, char *argv[])
 			case 0b11111111: printf("not implemented\n"); break;
 		}
 
-		//if execute flag set, print out register and flag changes
+		//if execute flag set, print outs
 		if (execute_flag)
 		{
 			printf(" ; ");
@@ -438,7 +426,7 @@ int main(int argc, char *argv[])
 			{
 				if (regs[i] != regs_orig[i])
 				{
-					printf("%s:0x%x->0x%x ",
+					printf("%s:0x%x->0x%x",
 							reg_names[i],
 							regs_orig[i],
 							regs[i]
@@ -459,42 +447,41 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		// printf's newline at the end of instruction
+		// printf newlinw at the end of instruction
 		printf("\n");
-
-	// end of intruction decode loop
 	}
 
-	//if execute flag set, print out registers before exiting program
+	//if execute flag set, print out registers before exiting
 	if (execute_flag)
 	{
 		printf("\nFinal registers:\n");
 		print_registers(regs, (sizeof(regs) / sizeof(regs[0])));
 	}
 
-	// close the opened asm file (to release the resources it was using)
+	// close the file when done(to release the resources it was using)
 	fclose(asm_file);
 
-	// exit program with success code
+	// exit with success code
 	return(0);
 }
 
 /* function definitions */
 
-void regmem_tofrom_regmem(
-		FILE* asm_file,
-		int byte,
-		char* instruction)
+void regmem_tofrom_regmem(FILE* asm_file, int byte, char* instruction)
 {
 
 	// read in the secong byte for this instruction set
 	int byte2 = fgetc(asm_file);
+
 	// get destination bit
 	int dbit = ((byte >> 1) & 0b1);
+
 	// get register string
 	char* reg_str = get_reg_string(((byte&0b1)<<3) | ((byte2 >> 3) & 0b111));
+
 	// get register/memory string
 	char* regmem_str = get_reg_string(((byte&0b1)<<3) | (byte2 & 0b111));
+
 	// get effective address string
 	char* effaddr_str = get_effective_address(byte2 & 0b111);
 
@@ -514,27 +501,19 @@ void regmem_tofrom_regmem(
 			// bitwise OR together byte4 and byte3 for displacemt value
 			int16_t disp_val = ((byte4 << 8) | byte3);
 
-			if (dbit)  // if d bit is one, reg is destination
-			{
-				printf("%s, [%i]", reg_str, disp_val);
-			}
-			else // if d bit is zero, reg is source
-			{
+			dbit ? // if d bit is one, reg is destination
+				printf("%s, [%i]", reg_str, disp_val)
+				: // if d bit is zero, reg is source
 				printf("[%i], %s", disp_val, reg_str);
-			}
 		}
 
-		// normal case of mod00(where reg is not110). no dispacement.
+		// normal case of mod00(reg is not 110). no dispacement.
 		else
 		{
-			if (dbit) // if d bit is one, reg is destination
-			{
-				printf("%s, [%s]", reg_str, effaddr_str);
-			}
-			else // if d bit is zero, reg is source
-			{
+			dbit ? // if d bit is one, reg is destination
+				printf("%s, [%s]", reg_str, effaddr_str)
+				: // if d bit is zero, reg is source
 				printf("[%s], %s", effaddr_str, reg_str);
-			}
 		}
 
 	} // mod01. displacement one byte.
@@ -602,7 +581,7 @@ void regmem_tofrom_regmem(
 				// if byte3 and byte4 are 0, don't add their value into printf
 				:
 					// if byte3 is 0 then don't add it into printf
-					printf("[%s], %s", effaddr_str, reg_str);
+					printf("[%s], %s\n", effaddr_str, reg_str);
 	}
 
 	// mod11 register mode, no displacement
@@ -616,6 +595,7 @@ void regmem_tofrom_regmem(
 			{
 				// get regmem value
 				int regmem_value = get_reg_value(regmem_str);
+
 				// get reg value
 				int reg_value = get_reg_value(reg_str);
 
@@ -778,6 +758,58 @@ void immediate_to_regmem(FILE* asm_file, int byte, char* instruction)
 	}
 }
 
+void immediate_to_register(FILE* asm_file, int byte, char* instruction)
+{
+	int16_t value = 0;
+	char* reg_string = get_reg_string(((byte >> 3) & 0b1) << 3 | (byte & 0b111));
+
+	// check W(wide) bit
+	// if W is one
+	if ((byte >> 3) & 0b1)
+	{
+		// if the wide bit is one, then a 16bit (2byte) displacement is needed
+		int16_t byte2 = fgetc(asm_file);
+		int16_t byte3 = fgetc(asm_file);
+		value = ((byte3 << 8) | byte2);
+	// if wide is zero
+	} else {
+		// if the wide bit is zero, then only an 8bit displacement is needed
+		int8_t byte2 = fgetc(asm_file);
+		value = byte2;
+	}
+
+	// execute if flag is set, modify registeres and print out instruction
+	if (execute_flag == 1)
+	{
+		// write the new value to the register
+		write_to_reg(reg_string, value);
+
+		// print out asm instruction with register modifications
+		printf(
+			"%s %s, %i",
+			instruction,
+			// retrieve the correct register name
+			reg_string,
+			// value from the displacement byte/s
+			value
+			);
+	}
+	else
+	{
+	// print out asm instruction
+	printf(
+		"%s %s, %i",
+		instruction,
+		// retrieve the correct register name
+		//get_reg_string(((byte >> 3) & 0b1) << 3 | (byte & 0b111)),
+		reg_string,
+		// calculate the value from the displacement byte/s
+		//((byte3 << 8) | byte2)
+		value
+		);
+	}
+}
+
 void memory_with_accumulator(FILE* asm_file, int byte, char* instruction)
 {
 	int dbit = (byte >> 1) & 0b1;
@@ -795,7 +827,7 @@ void memory_with_accumulator(FILE* asm_file, int byte, char* instruction)
 		dbit ? 
 			printf
 				(
-				"mov [%i], %s",
+				"mov [%i], %s\n",
 				// print memory address
 				memory_address_value,
 				// print the accumulator register
@@ -804,7 +836,7 @@ void memory_with_accumulator(FILE* asm_file, int byte, char* instruction)
 			:
 			printf
 				(
-				"mov %s, [%i]",
+				"mov %s, [%i]\n",
 				// print the accumulator register
 				"ax",
 				// print memory address
@@ -819,80 +851,6 @@ void memory_with_accumulator(FILE* asm_file, int byte, char* instruction)
 	}
 }
 
-void immediate_with_RegOrAcc(FILE* asm_file, int byte, char* instruction)
-{
-	//TODO: combine mov imm to reg with add,sub,cmp imm to acc
-	// initialize variables
-	int16_t value = 0;
-	char* destination_string = "...";
-	
-	if (strcmp(instruction, "mov")) // if not equal to mov
-	{
-		destination_string = "ax";
-	}
-	else // if equal to mov
-	{
-		destination_string = 
-			get_reg_string(((byte>>3) & 0b1)<<3 | (byte & 0b111));
-	}
-
-	// if wide bit is one, then 16bits of data follow
-	if ((byte >> 3) & 0b1)
-	{
-		// get data bytes
-		int16_t byte2 = fgetc(asm_file);
-		int16_t byte3 = fgetc(asm_file);
-		
-		// assign data to variable, via bitwise OR'ing data bytes
-		value = ((byte3 << 8) | byte2);
-
-	} else { // if the wide bit is zero, then 8bits of data to follow
-		// get data byte
-		int8_t byte2 = fgetc(asm_file);
-		// assign data to variable
-		value = byte2;
-	}
-
-	// if execute flag is set, modify registeres and print out instruction
-	if (execute_flag)
-	{
-		if ((byte >> 3) & 0b1) // if wbit is one
-		{
-			// write value to register
-			write_to_reg(destination_string, value);
-			// print out asm instruction with register modifications
-			printf(
-				"%s %s, %i",
-				instruction,
-				destination_string,
-				value
-				);
-		}
-		else // else wbit is zero
-		{
-			//TODO: implemenmt this
-			printf("imm with..., wbit zero not implemented");
-		}
-	}
-	else // just print out the instruction
-	{
-		if ((byte >> 3) & 0b1) // if wbit is one
-		{
-			printf(
-				"%s %s, %i",
-				instruction,
-				destination_string,
-				value
-				);
-		}
-		else
-		{
-			//TODO: implemenmt this
-			printf("imm with..., wbit zero not implemented");
-		}
-	}
-}
-
 void immediate_to_accumulator(FILE* asm_file, int byte, char* instruction)
 {
 	// check W(wide) bit
@@ -903,7 +861,7 @@ void immediate_to_accumulator(FILE* asm_file, int byte, char* instruction)
 		int byte3 = fgetc(asm_file);
 		// print out asm instruction
 		printf(
-			"%s %s, %i",
+			"%s %s, %i\n",
 			instruction,
 			// accumulator register
 			"ax",
@@ -915,7 +873,7 @@ void immediate_to_accumulator(FILE* asm_file, int byte, char* instruction)
 		int8_t byte2 = fgetc(asm_file);
 		// print out asm instruction
 		printf(
-			"%s %s, %i",
+			"%s %s, %i\n",
 			instruction,
 			// accumulator register
 			"al",
@@ -945,7 +903,7 @@ void mod00(FILE* asm_file, int byte, int byte2, char* instruction, int sbit)
 			//printf("spec case·mod·00·regmem·110·wide");
 			printf
 				(
-				"%s [%i], %i",
+				"%s [%i], %i\n",
 				instruction,
 				((byte4 << 8) | byte3),
 				byte5
@@ -971,7 +929,7 @@ void mod00(FILE* asm_file, int byte, int byte2, char* instruction, int sbit)
 			//print out instruction
 			printf
 				(
-				"%s [%s], %s %i",
+				"%s [%s], %s %i\n",
 				instruction,
 				// retrieve effective address
 				get_effective_address(byte2 & 0b111),
@@ -989,7 +947,7 @@ void mod00(FILE* asm_file, int byte, int byte2, char* instruction, int sbit)
 			//print out instruction
 			printf
 				(
-				"%s [%s], %s %i",
+				"%s [%s], %s %i\n",
 				instruction,
 				// retrieve effective address
 				get_effective_address(byte2 & 0b111),
@@ -1042,7 +1000,7 @@ void mod10(FILE* asm_file, int byte, int byte2, char* instruction, int sbit)
 		// print out instruction
 		printf
 			(
-			"%s [%s + %i], %s %i",
+			"%s [%s + %i], %s %i\n",
 			instruction,
 			// retrieve effective address
 			get_effective_address(byte2 & 0b111),
@@ -1061,7 +1019,7 @@ void mod10(FILE* asm_file, int byte, int byte2, char* instruction, int sbit)
 		int8_t byte5 = fgetc(asm_file);
 		printf
 			(
-			"%s %s + %i, %s %i",
+			"%s %s + %i, %s %i\n",
 			instruction,
 			// retrieve effective address
 			get_effective_address(byte2 & 0b111),
@@ -1088,7 +1046,7 @@ void mod11(FILE* asm_file, int byte, int byte2, char* instruction, int sbit)
 			int8_t byte3 = fgetc(asm_file);
 			printf
 				(
-				"%s %s, %i",
+				"%s %s, %i\n",
 				instruction,
 				// get register
 				get_reg_string((byte & 0b1) << 3 | (byte2 & 0b111)),
@@ -1105,7 +1063,7 @@ void mod11(FILE* asm_file, int byte, int byte2, char* instruction, int sbit)
 		int byte4 = fgetc(asm_file);
 		printf
 			(
-			"debug %s %s, %i",
+			"debug %s %s, %i\n",
 			instruction,
 			// get register
 			get_reg_string((byte & 0b1) << 3 | (byte2 & 0b111)),
@@ -1123,7 +1081,7 @@ void mod11(FILE* asm_file, int byte, int byte2, char* instruction, int sbit)
 		// print out instruction
 		printf
 			(
-			"%s %s, %i : this immediate value needs checking",
+			"%s %s, %i\n : this immediate value needs checking",
 			instruction,
 			// get register
 			get_reg_string((byte & 0b1) << 3 | (byte2 & 0b111)),
@@ -1189,7 +1147,7 @@ void jump_instruction(FILE* asm_file, int byte)
 			instruction = "jns";
 			break;
 	}
-	printf("%s %i", instruction, byte2);
+	printf("%s %i\n", instruction, byte2);
 }
 
 // register array retrieval
