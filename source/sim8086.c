@@ -481,10 +481,12 @@ int main(int argc, char *argv[])
 
 /* function definitions */
 
-void regmem_tofrom_regmem(
+void regmem_tofrom_regmem
+		(
 		FILE* asm_file,
 		int byte,
-		char* instruction)
+		char* instruction
+		)
 {
 
 	// read in the secong byte for this instruction set

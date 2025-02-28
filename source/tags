@@ -20,61 +20,82 @@
 !_TAG_KIND_DESCRIPTION!C	t,typedef	/typedefs/
 !_TAG_KIND_DESCRIPTION!C	u,union	/union names/
 !_TAG_KIND_DESCRIPTION!C	v,variable	/variable definitions/
-!_TAG_KIND_DESCRIPTION!Make	I,makefile	/makefiles/
-!_TAG_KIND_DESCRIPTION!Make	m,macro	/macros/
-!_TAG_KIND_DESCRIPTION!Make	t,target	/targets/
 !_TAG_OUTPUT_EXCMD	mixed	/number, pattern, mixed, or combineV2/
 !_TAG_OUTPUT_FILESEP	slash	/slash or backslash/
 !_TAG_OUTPUT_MODE	u-ctags	/u-ctags or e-ctags/
 !_TAG_OUTPUT_VERSION	0.0	/current.age/
 !_TAG_PARSER_VERSION!C	1.1	/current.age/
-!_TAG_PARSER_VERSION!Make	0.0	/current.age/
 !_TAG_PATTERN_LENGTH_LIMIT	96	/0 for no limit/
-!_TAG_PROC_CWD	/home/bjame/repos/github/sim8086/	//
+!_TAG_PROC_CWD	/home/gbjn/repos/github/sim8086/source/	//
 !_TAG_PROGRAM_AUTHOR	Universal Ctags Team	//
 !_TAG_PROGRAM_NAME	Universal Ctags	/Derived from Exuberant Ctags/
 !_TAG_PROGRAM_URL	https://ctags.io/	/official site/
-!_TAG_PROGRAM_VERSION	6.1.0	//
+!_TAG_PROGRAM_VERSION	6.1.0	/v6.1.0/
 !_TAG_ROLE_DESCRIPTION!C!function	foreigndecl	/declared in foreign languages/
 !_TAG_ROLE_DESCRIPTION!C!header	local	/local header/
 !_TAG_ROLE_DESCRIPTION!C!header	system	/system header/
 !_TAG_ROLE_DESCRIPTION!C!macro	undef	/undefined/
 !_TAG_ROLE_DESCRIPTION!C!struct	foreigndecl	/declared in foreign languages/
-!_TAG_ROLE_DESCRIPTION!Make!makefile	included	/included/
-!_TAG_ROLE_DESCRIPTION!Make!makefile	optional	/optionally included/
 ax	sim8086.c	/^uint16_t *ax = &regs[0];$/;"	v	typeref:typename:uint16_t *
+ax	sim8086_refactored.c	/^uint16_t *ax = &regs[0];$/;"	v	typeref:typename:uint16_t *
 bp	sim8086.c	/^uint16_t *bp = &regs[5];$/;"	v	typeref:typename:uint16_t *
+bp	sim8086_refactored.c	/^uint16_t *bp = &regs[5];$/;"	v	typeref:typename:uint16_t *
 bx	sim8086.c	/^uint16_t *bx = &regs[3];$/;"	v	typeref:typename:uint16_t *
+bx	sim8086_refactored.c	/^uint16_t *bx = &regs[3];$/;"	v	typeref:typename:uint16_t *
 cx	sim8086.c	/^uint16_t *cx = &regs[1];$/;"	v	typeref:typename:uint16_t *
-destination_operand	sim8086.c	/^	char destination_operand[16];$/;"	m	struct:instruction	typeref:typename:char[16]	file:
+cx	sim8086_refactored.c	/^uint16_t *cx = &regs[1];$/;"	v	typeref:typename:uint16_t *
 di	sim8086.c	/^uint16_t *di = &regs[7];$/;"	v	typeref:typename:uint16_t *
+di	sim8086_refactored.c	/^uint16_t *di = &regs[7];$/;"	v	typeref:typename:uint16_t *
 dx	sim8086.c	/^uint16_t *dx = &regs[2];$/;"	v	typeref:typename:uint16_t *
+dx	sim8086_refactored.c	/^uint16_t *dx = &regs[2];$/;"	v	typeref:typename:uint16_t *
 execute_flag	sim8086.c	/^int execute_flag = 0;$/;"	v	typeref:typename:int
+execute_flag	sim8086_refactored.c	/^int execute_flag = 0;$/;"	v	typeref:typename:int
 flags	sim8086.c	/^const char *flags[2] = {" "," "};$/;"	v	typeref:typename:const char * [2]
+flags	sim8086_refactored.c	/^const char *flags[2] = {" "," "};$/;"	v	typeref:typename:const char * [2]
 get_effective_address	sim8086.c	/^char* get_effective_address(int regmem)$/;"	f	typeref:typename:char *
+get_effective_address	sim8086_refactored.c	/^char* get_effective_address(int regmem)$/;"	f	typeref:typename:char *
 get_reg_string	sim8086.c	/^char* get_reg_string(int reg)$/;"	f	typeref:typename:char *
+get_reg_string	sim8086_refactored.c	/^char* get_reg_string(int reg)$/;"	f	typeref:typename:char *
 get_reg_value	sim8086.c	/^uint16_t get_reg_value(char* reg)$/;"	f	typeref:typename:uint16_t
+get_reg_value	sim8086_refactored.c	/^uint16_t get_reg_value(char* reg)$/;"	f	typeref:typename:uint16_t
 immediate_to_accumulator	sim8086.c	/^void immediate_to_accumulator(FILE* asm_file, int byte, char* instruction)$/;"	f	typeref:typename:void
-immediate_to_register	sim8086.c	/^void immediate_to_register(FILE* asm_file, int byte, char* instruction)$/;"	f	typeref:typename:void
+immediate_to_accumulator	sim8086_refactored.c	/^void immediate_to_accumulator(FILE* asm_file, int byte, char* instruction)$/;"	f	typeref:typename:void
 immediate_to_regmem	sim8086.c	/^void immediate_to_regmem(FILE* asm_file, int byte, char* instruction)$/;"	f	typeref:typename:void
-instruction	sim8086.c	/^struct instruction$/;"	s	file:
+immediate_to_regmem	sim8086_refactored.c	/^void immediate_to_regmem(FILE* asm_file, int byte, char* instruction)$/;"	f	typeref:typename:void
+immediate_with_RegOrAcc	sim8086.c	/^void immediate_with_RegOrAcc(FILE* asm_file, int byte, char* instruction)$/;"	f	typeref:typename:void
+immediate_with_RegOrAcc	sim8086_refactored.c	/^void immediate_with_RegOrAcc(FILE* asm_file, int byte, char* instruction)$/;"	f	typeref:typename:void
+instdw_modregrm_displo_disphi	sim8086_refactored.c	/^void instdw_modregrm_displo_disphi$/;"	f	typeref:typename:void
 jump_instruction	sim8086.c	/^void jump_instruction(FILE* asm_file, int byte)$/;"	f	typeref:typename:void
-main	prntbinry.c	/^int main(int argc, char *argv[])$/;"	f	typeref:typename:int
+jump_instruction	sim8086_refactored.c	/^void jump_instruction(FILE* asm_file, int byte)$/;"	f	typeref:typename:void
+main	printbinary.c	/^int main(int argc, char *argv[])$/;"	f	typeref:typename:int
 main	sim8086.c	/^int main(int argc, char *argv[])$/;"	f	typeref:typename:int
+main	sim8086_refactored.c	/^int main(int argc, char *argv[])$/;"	f	typeref:typename:int
 memory_with_accumulator	sim8086.c	/^void memory_with_accumulator(FILE* asm_file, int byte, char* instruction)$/;"	f	typeref:typename:void
-mnemonic	sim8086.c	/^	char mnemonic[16];$/;"	m	struct:instruction	typeref:typename:char[16]	file:
+memory_with_accumulator	sim8086_refactored.c	/^void memory_with_accumulator(FILE* asm_file, int byte, char* instruction)$/;"	f	typeref:typename:void
 mod00	sim8086.c	/^void mod00(FILE* asm_file, int byte, int byte2, char* instruction, int sbit)$/;"	f	typeref:typename:void
+mod00	sim8086_refactored.c	/^void mod00(FILE* asm_file, int byte, int byte2, char* instruction, int sbit)$/;"	f	typeref:typename:void
 mod01	sim8086.c	/^void mod01(FILE* asm_file, int byte, int byte2, char* instruction, int sbit)$/;"	f	typeref:typename:void
+mod01	sim8086_refactored.c	/^void mod01(FILE* asm_file, int byte, int byte2, char* instruction, int sbit)$/;"	f	typeref:typename:void
 mod10	sim8086.c	/^void mod10(FILE* asm_file, int byte, int byte2, char* instruction, int sbit)$/;"	f	typeref:typename:void
+mod10	sim8086_refactored.c	/^void mod10(FILE* asm_file, int byte, int byte2, char* instruction, int sbit)$/;"	f	typeref:typename:void
+mod10ref	sim8086_refactored.c	/^void mod10ref(FILE* asm_file, int byte, int byte2, char* instruction, int sbit)$/;"	f	typeref:typename:void
 mod11	sim8086.c	/^void mod11(FILE* asm_file, int byte, int byte2, char* instruction, int sbit)$/;"	f	typeref:typename:void
+mod11	sim8086_refactored.c	/^void mod11(FILE* asm_file, int byte, int byte2, char* instruction, int sbit)$/;"	f	typeref:typename:void
+print_binary	sim8086_refactored.c	/^int print_binary = 0;$/;"	v	typeref:typename:int
 print_registers	sim8086.c	/^void print_registers(uint16_t* registers, size_t array_size)$/;"	f	typeref:typename:void
+print_registers	sim8086_refactored.c	/^void print_registers(uint16_t* registers, size_t array_size)$/;"	f	typeref:typename:void
 reg_names	sim8086.c	/^const char *reg_names[8] = {"ax", "cx", "dx", "bx", "sp", "bp", "si", "di"};$/;"	v	typeref:typename:const char * [8]
-regmem_tofrom_regmem	sim8086.c	/^void regmem_tofrom_regmem($/;"	f	typeref:typename:void
+reg_names	sim8086_refactored.c	/^const char *reg_names[8] = {"ax", "cx", "dx", "bx", "sp", "bp", "si", "di"};$/;"	v	typeref:typename:const char * [8]
+regmem_tofrom_regmem	sim8086.c	/^void regmem_tofrom_regmem$/;"	f	typeref:typename:void
 regs	sim8086.c	/^uint16_t regs[8] = {0};$/;"	v	typeref:typename:uint16_t[8]
+regs	sim8086_refactored.c	/^uint16_t regs[8] = {0};$/;"	v	typeref:typename:uint16_t[8]
 si	sim8086.c	/^uint16_t *si = &regs[6];$/;"	v	typeref:typename:uint16_t *
+si	sim8086_refactored.c	/^uint16_t *si = &regs[6];$/;"	v	typeref:typename:uint16_t *
 sign_flag	sim8086.c	/^const char **sign_flag = &flags[0];$/;"	v	typeref:typename:const char **
-sim8086	Makefile	/^sim8086: sim8086.c$/;"	t
-source_operand	sim8086.c	/^	char source_operand[16];$/;"	m	struct:instruction	typeref:typename:char[16]	file:
+sign_flag	sim8086_refactored.c	/^const char **sign_flag = &flags[0];$/;"	v	typeref:typename:const char **
 sp	sim8086.c	/^uint16_t *sp = &regs[4];$/;"	v	typeref:typename:uint16_t *
+sp	sim8086_refactored.c	/^uint16_t *sp = &regs[4];$/;"	v	typeref:typename:uint16_t *
 write_to_reg	sim8086.c	/^void write_to_reg(char* reg, uint16_t value)$/;"	f	typeref:typename:void
+write_to_reg	sim8086_refactored.c	/^void write_to_reg(char* reg, uint16_t value)$/;"	f	typeref:typename:void
 zero_flag	sim8086.c	/^const char **zero_flag = &flags[1];$/;"	v	typeref:typename:const char **
+zero_flag	sim8086_refactored.c	/^const char **zero_flag = &flags[1];$/;"	v	typeref:typename:const char **

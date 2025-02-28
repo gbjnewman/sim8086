@@ -1,0 +1,155 @@
+	// mod11 register mode, no displacement
+	if ((byte2 >> 6) == 0b11)
+	{
+		mod11(asm_file, byte, byte2, instruction, sbit);
+	/*
+		// add bytes into print binary buffer if necessary
+		if (print_binary)
+		{
+			sprintf
+				(
+				print_binary_buffer + strlen(print_binary_buffer),
+				"\nbinary as read in:\n%08b\n%08b\n   >> ",
+				byte,
+				byte2
+				);
+		}
+
+		if (dbit) // D bit is one, reg is destination
+		{
+			sprintf
+				(
+				intruction_string_buffer + strlen(intruction_string_buffer),
+				"%s, %s",
+				reg_str,
+				regmem_str
+				);
+
+			// if execute flag set, execute the instruction
+			if (execute_flag)
+			{
+				// get regmem value
+				int regmem_value = get_reg_value(regmem_str);
+				// get reg value
+				int reg_value = get_reg_value(reg_str);
+
+				if (strcmp(instruction, "mov") == 0)
+				{
+					// write regmem value into reg
+					write_to_reg(reg_str, regmem_value);
+				}
+				if (strcmp(instruction, "add") == 0)
+				{
+					printf("add not implemented");
+				}
+				if (strcmp(instruction, "sub") == 0)
+				{
+					int new_value = reg_value - regmem_value;
+					if (new_value >> 7)
+					{
+						*sign_flag = "S";
+					}
+					else
+					{
+						*sign_flag = " ";
+					}
+					// write regmem value into reg
+					write_to_reg(reg_str, new_value);
+				}
+				if (strcmp(instruction, "cmp") == 0)
+				{
+					// compare reg and regmem by subtraction
+					int new_value = reg_value - regmem_value;
+
+					// sign flag gets checked for cmp
+					if (new_value >> 7)
+					{
+						*sign_flag = "S";
+					}
+					else
+					{
+						*sign_flag = " ";
+					}
+
+					// if cmp if zero set flag
+					if (new_value == 0)
+					{
+						*zero_flag = "Z";
+					}
+					else
+					{
+						*zero_flag = " ";
+					}
+				}
+			}
+		}
+		else // D bit is zero, regmem is destination
+		{
+			sprintf
+				(
+				intruction_string_buffer + strlen(intruction_string_buffer),
+				"%s, %s",
+				regmem_str,
+				reg_str
+				);
+
+			// if execute flag set, execute the instruction
+			if (execute_flag)
+			{
+				// get reg value
+				int reg_value = get_reg_value(reg_str);
+
+				// get regmem value
+				int regmem_value = get_reg_value(regmem_str);
+
+				if (strcmp(instruction, "mov") == 0)
+				{
+					// write reg value into regmem
+					write_to_reg(regmem_str, reg_value);
+				}
+				if (strcmp(instruction, "add") == 0)
+				{
+					printf("add not implemented");
+				}
+				if (strcmp(instruction, "sub") == 0)
+				{
+					int new_value = regmem_value - reg_value;
+					if (new_value >> 7)
+					{
+						*sign_flag = "S";
+					}
+					else
+					{
+						*sign_flag = " ";
+					}
+					write_to_reg(regmem_str, new_value);
+				}
+				if (strcmp(instruction, "cmp") == 0)
+				{
+					// compare reg and regmem by subtraction
+					int new_value = regmem_value - reg_value;
+
+					// sign flag gets checked for cmp
+					if (new_value >> 7)
+					{
+						*sign_flag = "S";
+					}
+					else
+					{
+						*sign_flag = " ";
+					}
+
+					// if cmp if zero set flag
+					if (new_value == 0)
+					{
+						*zero_flag = "Z";
+					}
+					else
+					{
+						*zero_flag = " ";
+					}
+				}
+			}
+		}
+	*/
+	}
